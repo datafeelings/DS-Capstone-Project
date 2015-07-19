@@ -1,0 +1,85 @@
+---
+title: "DS_Capstone"
+author: "Datafeellings"
+date: "July 19, 2015"
+output: html_document
+---
+
+Setup project workspace
+
+```{r, cache=TRUE, echo=FALSE}
+
+ifelse(!dir.exists(file.path("~/Coursera/Capstone/Source")),dir.create(file.path("~/Coursera/Capstone/Source")), FALSE)
+ifelse(!dir.exists(file.path("~/Coursera/Capstone/Code")),dir.create(file.path("~/Coursera/Capstone/Code")), FALSE)
+ifelse(!dir.exists(file.path("~/Coursera/Capstone/Figures")),dir.create(file.path("~/Coursera/Capstone/Figures")), FALSE)
+ifelse(!dir.exists(file.path("~/Coursera/Capstone/Processed_data")),dir.create(file.path("~/Coursera/Capstone/Processed_data")), FALSE)
+setwd("~/Coursera/Capstone")
+```
+
+Download the data
+
+```{r}
+
+# if (!file.exists("Coursera-SwiftKey.zip")) 
+# {
+#   download.file(url = "https://d396qusza40orc.cloudfront.net/dsscapstone/dataset/Coursera-SwiftKey.zip", destfile = "~/Documents/Disk D/Coursera/Capstone/Source/Coursera-SwiftKey.zip", method = "curl")
+#   system("unzip Coursera-SwiftKey.zip")
+# }
+
+#Load the data into the workspace using the tm package
+#library("tm")
+#docs = Corpus(DirSource("Source/final/ru_RU"), readerControl = list(language = "ru_RU", load = F))
+```
+
+Load the data into the WS using readLines() function
+
+```{r}
+
+con1 <- file("~/Coursera/Capstone/Source/final/en_US/en_US.blogs.txt", "r")
+en_b <- readLines(con1) 
+close(con1)
+
+con2 <- file("~/Coursera/Capstone/Source/final/en_US/en_US.news.txt", "r")
+en_n <- readLines(con2) 
+close(con2)
+
+con3 <- file("~/Coursera/Capstone/Source/final/en_US/en_US.twitter.txt", "r")
+en_t <- readLines(con3) 
+close(con3)
+
+```
+
+Convert the read corpora into data tables and calculate a column with character count in each. 
+
+```{r}
+
+require(data.table) # load the required package
+
+en_b = as.data.table(en_b) 
+en_b = en_b [, a:= nchar(en_b)]
+en_b [, max(a)] # Display max character count
+
+en_n = as.data.table(en_n) 
+en_n = en_n [, a:= nchar(en_n)]
+en_n [, max(a)] # Display max character count
+
+en_t = as.data.table(en_t) 
+#en_t = en_t [, a:= nchar(en_t)]
+#en_t [, max(t)] # Display max character count
+```
+
+For the twitter corpus, use the %like% operator to count lines containing words "love" and "hate". Then calculate the ratio.
+
+```{r}
+ans = en_t[en_t %like% "love", .N] / en_t[en_t %like% "hate", .N]
+cat ("The love/hate ratio on Twitter is ", ans)
+```
+
+Find the line with "biostats" using the same %like% operator.
+
+```{r}
+
+en_t[en_t %like% "biostats"]
+
+```
+
