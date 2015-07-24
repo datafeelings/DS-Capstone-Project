@@ -27,9 +27,7 @@ Download the data
 #   system("unzip Coursera-SwiftKey.zip")
 # }
 
-#Load the data into the workspace using the tm package
-#library("tm")
-#docs = Corpus(DirSource("Source/final/ru_RU"), readerControl = list(language = "ru_RU", load = F))
+
 ```
 
 Load the data into the WS using readLines() function
@@ -59,27 +57,88 @@ set.seed(888)
 
 en_b = as.data.table(en_b) 
 en_b_samp = en_b [sample(.N,3000)] # random sample of 3k lines
+write.csv(en_b_samp, file = "Processed_data/en_b_samp.csv") #write the sample
 
 en_n = as.data.table(en_n) 
 en_n_samp = en_n [sample(.N,3000)]
+write.csv(en_n_samp, file = "Processed_data/en_n_samp.csv")
 
 en_t = as.data.table(en_t) 
 en_t_samp = en_t[sample(.N,3000)]
+write.csv(en_t_samp, file = "Processed_data/en_t_samp.csv")
 ```
 
-For the twitter corpus, use the %like% operator to count lines containing words "love" and "hate". Then calculate the ratio.
+Now we read in the samples using the tm package as a single corpus. As the goal is to tokenize the words and remove profanity, no differentiation is required between the different sources of the text.
 
 ```{r}
-ans = en_t[en_t %like% "love", .N] / en_t[en_t %like% "hate", .N]
-cat ("The love/hate ratio on Twitter is ", ans)
+require("tm")
+require("SnowballC")
+samp = Corpus(DirSource("Processed_data"), readerControl = list(language = "en_EN", load = F))
+
 ```
 
-Find the line with "biostats" using the same %like% operator.
+Preprocessing the text using the automated functions of the "tm" package.
 
 ```{r}
+# Input for this part for the workflow: https://gist.github.com/dsparks/4260167
 
-en_t[en_t %like% "biostats"]
+# Make lowercase & remove punctuation
+samp_clean = tm_map(samp, tolower)
+
+# Remove special characters and punctuation
+
+for(j in seq(samp_clean))   
+{   
+    samp_clean[[j]] <- gsub("/", " ", samp_clean[[j]])   
+    samp_clean[[j]] <- gsub("@", " ", samp_clean[[j]])   
+    samp_clean[[j]] <- gsub("\\|", " ", samp_clean[[j]])
+    samp_clean[[j]] <- gsub("â€", " ", samp_clean[[j]])
+}  
+samp_clean = tm_map(samp_clean, PlainTextDocument)  
+samp_clean = tm_map(samp_clean, removePunctuation)
+samp_clean = tm_map(samp_clean, removeNumbers)
+
+# Remove stopwords & stem words
+samp_clean = tm_map(samp_clean, removeWords, stopwords("english")) 
+samp_clean = tm_map(samp_clean, stemDocument) 
+
+# Strip white space
+samp_clean = tm_map(samp_clean, stripWhitespace) 
 
 ```
 
+Removing profanity
+
+
+```{r}
+# source of the English language profanity list used by Google
+# credit goes to https://gist.github.com/jamiew
+
+con4 = url(description = "https://gist.githubusercontent.com/jamiew/1112488/raw/7ca9b1669e1c24b27c66174762cb04e14cf05aa7/google_twunter_lol")
+profanity = readLines(con4)
+close(con4)
+
+dir.create(path = "Source/external")
+write.csv(x = profanity, file = "Source/external/profanity.csv")
+profanity1 = read.csv("Source/external/profanity.csv", skip = 1,nrows = 451)
+
+# clean the file to turn it into a character string that can be used by tm 
+profanity1=profanity1[,-1]
+profanity1=as.character(profanity1)
+
+profanity1=gsub("\"", x= profanity1, replacement ="")
+profanity1=gsub(pattern =":1", x= profanity1, replacement ="")
+profanity1=gsub(pattern =",", x= profanity1, replacement ="")
+
+```
+
+
+
+Generate a word cloud
+
+```{r}
+require(wordcloud)
+wordcloud(samp_clean, max.words = 100, random.order = F, rot.per=0.0, colors=brewer.pal(3,"Dark2" ))
+
+```
 
