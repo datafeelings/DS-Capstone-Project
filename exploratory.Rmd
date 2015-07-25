@@ -159,15 +159,18 @@ findFreqTerms(TDM, 1000)
 Calculate a term document matrix without the sparsely occuring words
 
 ```{r}
-TDM.common$dimnames$Docs = c("blogs", "news", "twitter")
 TDM.common = removeSparseTerms(TDM, 0.1)
+TDM.common$dimnames$Docs = c("blogs", "news", "twitter")
 #inspect(TDM.common[1:20,1:3])
 
 ```
 
+Question 1: Some words are more frequent than others - what are the distributions of word frequencies? 
+
 ```{r}
 # convert the matrix into a data table with a frequency of word in each sample
-tdm_c = as.data.frame.table(TDM.common)
+tdm_c = as.matrix(TDM.common)
+tdm_c = as.data.frame.table(tdm_c)
 tdm_c = as.data.table(tdm_c)
 ```
 
@@ -175,14 +178,35 @@ tdm_c = as.data.table(tdm_c)
 
 library(ggplot2)
 
-    ggplot(anschart, aes(x = Docs, y = Terms, fill = log10(Freq))) +
-        geom_dotplot(colour = "white") +
-        scale_fill_gradient(high="#FF0000" , low="#FFFFFF")+
-        ylab("") +
-        theme(panel.background = element_blank()) +
-        theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+p <- ggplot(subset(tdm_c, Freq>500), aes(Terms, Freq))    
+p <- p + geom_bar(stat="identity") + facet_wrap(~ Docs)   
+p <- p + theme(axis.text.x=element_text(angle=45, hjust=1))   
+p
+
+#Source: https://rstudio-pubs-static.s3.amazonaws.com/31867_8236987cf0a8444e962ccd2aec46d9c3.html#loading-texts
 
 ```
+
+Question 2. What are the frequencies of 2-grams and 3-grams in the dataset? 
+
+```{r}
+
+# Bigram and Trigram Tokenizer Functions
+
+BigramTokenizer <- function(x) NGramTokenizer(x, 
+                                Weka_control(min = 2, max = 2))
+
+TrigramTokenizer <- function(x) NGramTokenizer(x, 
+                                Weka_control(min = 3, max = 3))
+
+tdm_bi <- TermDocumentMatrix(samp_clean, control = list(tokenize = TrigramTokenizer))
+
+tdm_tri <- TermDocumentMatrix(samp_clean, control = list(tokenize = TrigramTokenizer))
+
+#Source: http://stackoverflow.com/questions/19615181/finding-ngrams-in-r-and-comparing-ngrams-across-corpora
+
+```
+
 
   
 Generate a word cloud
