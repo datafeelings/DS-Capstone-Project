@@ -1,10 +1,9 @@
 ---
-title: "Tokenization"
+title: "Exploratory"
 author: "Datafeellings"
-date: "July 24, 2015"
+date: "July 25, 2015"
 output: html_document
 ---
-
 
 Setup project workspace
 
@@ -60,11 +59,11 @@ en_b_samp = en_b [sample(.N,3000)] # random sample of 3k lines
 write.csv(en_b_samp, file = "Processed_data/en_b_samp.csv") #write the sample
 
 en_n = as.data.table(en_n) 
-en_n_samp = en_n [sample(.N,3000)]
+en_n_samp = en_n [sample(.N,3000)] # random sample of 3k lines
 write.csv(en_n_samp, file = "Processed_data/en_n_samp.csv")
 
 en_t = as.data.table(en_t) 
-en_t_samp = en_t[sample(.N,3000)]
+en_t_samp = en_t[sample(.N,3000)] # random sample of 3k lines
 write.csv(en_t_samp, file = "Processed_data/en_t_samp.csv")
 ```
 
@@ -100,6 +99,7 @@ profanity1=gsub("\"", x= profanity1, replacement ="")
 profanity1=gsub(pattern =":1", x= profanity1, replacement ="")
 profanity1=gsub(pattern =",", x= profanity1, replacement ="")
 profanity1 = tolower(profanity1)
+rm(profanity)
 
 ```
 
@@ -112,30 +112,79 @@ Preprocessing the text using the automated functions of the "tm" package.
 samp_clean = tm_map(samp, tolower)
 
 # Remove special characters and punctuation
+samp_clean = tm_map(samp_clean, removePunctuation)
 
 for(j in seq(samp_clean))   
 {   
-    samp_clean[[j]] <- gsub("/", " ", samp_clean[[j]])   
+  samp_clean[[j]] = iconv(samp_clean[[j]], to="ASCII", sub = "") 
+  samp_clean[[j]] <- gsub("/", " ", samp_clean[[j]])   
     samp_clean[[j]] <- gsub("@", " ", samp_clean[[j]])   
     samp_clean[[j]] <- gsub("\\|", " ", samp_clean[[j]])
-    samp_clean[[j]] <- gsub("â€", " ", samp_clean[[j]])
+#    samp_clean[[j]] <- gsub("â€", " ", samp_clean[[j]])
+#    samp_clean[[j]] <- gsub("^[^:alnum:]", " ", samp_clean[[j]])
 }  
 samp_clean = tm_map(samp_clean, PlainTextDocument)  
-samp_clean = tm_map(samp_clean, removePunctuation)
+
 samp_clean = tm_map(samp_clean, removeNumbers)
 
-# Remove stopwords & profanity
-samp_clean = tm_map(samp_clean, removeWords, stopwords("english")) 
+# Remove profanity
+#samp_clean = tm_map(samp_clean, removeWords, stopwords("english")) 
 samp_clean = tm_map(samp_clean, removeWords, profanity1) 
 
 # Stem words and strip white space
-samp_clean = tm_map(samp_clean, stemDocument) 
+samp_clean = tm_map(samp_clean, content_transformer(stemDocument)) 
 samp_clean = tm_map(samp_clean, stripWhitespace) 
 
 ```
 
+Begin the exploration.
+First we check how many distinct words were caught by the sample and what are the most frequently occurring words in the sample.
 
+```{r}
+TDM = TermDocumentMatrix(samp_clean)
+dim(TDM)
+#inspect(TDM[1:10,1:3])
 
+```
+
+The dimensions of the matrix show that we have a term document matrix of 19896 distinct terms (stemmed!) from the 3 documents.
+
+First we can look at the words occurring over 1000 times:
+```{r}
+
+findFreqTerms(TDM, 1000)
+
+```
+
+Calculate a term document matrix without the sparsely occuring words
+
+```{r}
+TDM.common$dimnames$Docs = c("blogs", "news", "twitter")
+TDM.common = removeSparseTerms(TDM, 0.1)
+#inspect(TDM.common[1:20,1:3])
+
+```
+
+```{r}
+# convert the matrix into a data table with a frequency of word in each sample
+tdm_c = as.data.frame.table(TDM.common)
+tdm_c = as.data.table(tdm_c)
+```
+
+```{r}
+
+library(ggplot2)
+
+    ggplot(anschart, aes(x = Docs, y = Terms, fill = log10(Freq))) +
+        geom_dotplot(colour = "white") +
+        scale_fill_gradient(high="#FF0000" , low="#FFFFFF")+
+        ylab("") +
+        theme(panel.background = element_blank()) +
+        theme(axis.text.x = element_blank(), axis.ticks.x = element_blank())
+
+```
+
+  
 Generate a word cloud
 
 ```{r}
@@ -143,4 +192,5 @@ require(wordcloud)
 wordcloud(samp_clean, max.words = 100, random.order = F, rot.per=0.0, colors=brewer.pal(3,"Dark2" ))
 
 ```
+
 
