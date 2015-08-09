@@ -70,6 +70,7 @@ write.csv(en_t_samp, file = "Processed_data/en_t_samp.csv")
 Now we read in the samples using the tm package as a single corpus. As the goal is to tokenize the words and remove profanity, no differentiation is required between the different sources of the text.
 
 ```{r}
+setwd("Coursera/Capstone/")
 require("tm")
 require("SnowballC")
 samp = Corpus(DirSource("Processed_data"), readerControl = list(language = "en_EN", load = F))
@@ -129,7 +130,7 @@ samp_clean = tm_map(samp_clean, removeNumbers)
 
 # Remove profanity
 #samp_clean = tm_map(samp_clean, removeWords, stopwords("english")) 
-samp_clean = tm_map(samp_clean, removeWords, profanity1) 
+#samp_clean = tm_map(samp_clean, removeWords, profanity1) 
 
 # Stem words and strip white space
 samp_clean = tm_map(samp_clean, content_transformer(stemDocument)) 

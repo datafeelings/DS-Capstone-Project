@@ -1,0 +1,48 @@
+---
+title: "Modeling-1"
+author: "datafeelings"
+date: "31 Jul 2015"
+output: html_document
+---
+
+As the training data set is very large, I used a sample of 1% of the text lines from each of the three sources. 
+
+```{r, cache=TRUE}
+require("quanteda")
+setwd("/Users/dima/Documents/Coursera/Capstone")
+
+```
+
+SAMPLING INPUT - BUILD RANDOM SAMPLER!
+
+```{r}
+
+con1 = file("Source/final/en_US/en_US.blogs.txt", "r")
+en_b = readLines(con1, n = 2000) 
+close(con1)
+
+con2 = file("Source/final/en_US/en_US.news.txt", "r")
+en_n = readLines(con2, n = 2000) 
+close(con2)
+
+con3 = file("Source/final/en_US/en_US.twitter.txt", "r")
+en_t = readLines(con3, n = 2000) 
+close(con3)
+
+mycorp = corpus(c (en_b, en_n, en_t))
+rm(en_b, en_n, en_t)
+```
+
+Build DTM, but has not removed profanity! REMOVE PROFANITY using the stopwords parameter of the dfm function! Maybe do it in the outcome.
+
+```{r}
+dtm = dfm(mycorp, verbose = T, clean = T, stopwords=T, stem = T)
+```
+
+Trimming the dtm to remove the not so frequent words. This has to be based on some understanding of the frequency of term occurrence across documents.
+
+```{r}
+dtmReduced = trim(dtm, minCount = 200, minDoc = 10, verbose = T)
+
+```
+
