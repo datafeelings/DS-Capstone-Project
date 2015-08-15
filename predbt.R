@@ -80,7 +80,7 @@ bif$probability = bif$sums/length(bif$sums)
 bif = as.data.table(bif)
 setkey(x=bif, keywords)
 
-rm(m2, m2.df, m2.df.melted)
+rm(m2, m2.df, m2.df.melted, tdmbi, samp, samp_clean)
 
 # Trigram probabilities
 m3 = as.matrix(tdmtri)
@@ -96,7 +96,7 @@ trif = as.data.table(trif)
 setkey(x=trif, keywords)
 
 
-rm(m3, m3.df, m3.df.melted)
+rm(m3, m3.df, m3.df.melted, tdmtri)
 
 ngram.end.time <- Sys.time()
 ngram.time.taken <- ngram.end.time - ngram.start.time
@@ -120,9 +120,15 @@ predbt = function(userinput) {
   # search for the input word and return 5 with highest probability
  probbi = bif[keywords %like% inputsearch][order(-probability)][1:5, keywords, probability]
  probtri = trif[keywords %like% inputsearch][order(-probability)][1:5, keywords, probability]
- ans = rbind(probbi,probtri)
- ans = as.data.table(ans)
- return(ans)
+ 
+ # cut out the search term and return the next possible words only
+ ansbi = probbi [, keywords]
+ ansbi = gsub(pattern = inputsearch, replacement = "", x = ansbi)
+ 
+ anstri = probtri [,keywords]
+ anstri = gsub(pattern = inputsearch, replacement = "", x = anstri)
+ 
+ cat(ansbi,"\n", anstri,sep = "|")
 }
 
 
